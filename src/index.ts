@@ -1,4 +1,5 @@
-//commentszzz
+// Routes
+import { authRouter } from "./routes/auth/auth.routes.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -13,6 +14,7 @@ import initDB from "./db/db.connect.js";
 import { globalRateLimiter } from "./middlewares/limiter.middleware.js";
 import { globalErrorHandler } from "./middlewares/global-error-handler.middleware.js";
 
+dotenv.config();
 const bootstrap = async () => {
   const app = express();
   app.set("trust proxy", 1);
@@ -21,6 +23,7 @@ const bootstrap = async () => {
   const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(",")
     : [];
+
   // CORS
   app.use(
     cors({
@@ -35,6 +38,7 @@ const bootstrap = async () => {
       credentials: true,
     }),
   );
+
   // Security headers
   app.use(helmet());
   // Rate limiting
@@ -52,8 +56,9 @@ const bootstrap = async () => {
   app.get("/api/test", (req, res) => {
     res.status(200).send("Api is running");
   });
-  // Routes
-  // app.use("api", route);
+  //Routes
+  app.use("/api/auth/", authRouter);
+
   // Error handler
   app.use(globalErrorHandler);
   const server = http.createServer(app);
