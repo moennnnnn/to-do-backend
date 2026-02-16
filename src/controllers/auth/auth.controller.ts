@@ -5,10 +5,10 @@ import { Request, Response } from "express";
 
 export const register = async (req: Request, res: Response) => {
   //Get data
-  const { fullname, username, email, password } = req.body;
+  const { firstName, lastName, username, email, password } = req.body;
 
   // Check if all fields have data
-  if (!fullname || !username || !email || !password)
+  if (!firstName || !lastName || !username || !email || !password)
     throw new AppError("All fields are required.", 400);
 
   // Find if email exists
@@ -26,13 +26,15 @@ export const register = async (req: Request, res: Response) => {
 
   // Create acc
   const account = await registerS({
+    firstName,
+    lastName,
     username,
     email,
     password: hashedPassword,
   });
 
   //Return response
-  res.status(200).json({ message: "Account registered successfully.", account });
+  res.status(200).json({ message: "Account registered successfully." });
 };
 
 export const login = async (req: Request, res: Response) => {
@@ -40,7 +42,8 @@ export const login = async (req: Request, res: Response) => {
   const { username, email, password } = req.body;
 
   // Check if required fields have data
-  if (!email && !username) throw new AppError("Email is required.", 400);
+  if (!email && !username)
+    throw new AppError("Email or username is required.", 400);
   if (!password) throw new AppError("Password is required.", 400);
 
   // Check if account exists
@@ -49,7 +52,7 @@ export const login = async (req: Request, res: Response) => {
   if (!username && email) account = await findAccountS({ email });
 
   if (!account) {
-    throw new AppError("Account not found.", 400);
+    throw new AppError("Invalid credentials.", 400);
   }
 
   // Check if pass is correct
@@ -59,7 +62,7 @@ export const login = async (req: Request, res: Response) => {
   }
 
   //Return response
-  res.status(200).json({ message: "Login successfully.", account });
+  res.status(200).json({ message: "Login successfully." });
 };
 
 export const logout = async (req: Request, res: Response) => {

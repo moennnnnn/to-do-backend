@@ -57,7 +57,7 @@ const bootstrap = async () => {
     res.status(200).send("Api is running");
   });
   //Routes
-  app.use("/api/auth/", authRouter);
+  app.use("/api/auth", authRouter);
 
   // Error handler
   app.use(globalErrorHandler);
