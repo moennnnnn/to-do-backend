@@ -6,6 +6,7 @@ export type AccountType = {
   username: string;
   email: string;
   password: string;
+  agree: boolean;
 };
 
 export type AccountFilterType = Partial<AccountType>;

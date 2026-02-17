@@ -5,11 +5,15 @@ import { Request, Response } from "express";
 
 export const register = async (req: Request, res: Response) => {
   //Get data
-  const { firstName, lastName, username, email, password } = req.body;
+  const { firstName, lastName, username, email, password, agree } = req.body;
 
   // Check if all fields have data
   if (!firstName || !lastName || !username || !email || !password)
     throw new AppError("All fields are required.", 400);
+
+  if (!agree) {
+    throw new AppError("You must agree to the Terms and Conditions.", 400);
+  }
 
   // Find if email exists
   if (await findAccountS({ email })) {
@@ -31,6 +35,7 @@ export const register = async (req: Request, res: Response) => {
     username,
     email,
     password: hashedPassword,
+    agree,
   });
 
   //Return response
