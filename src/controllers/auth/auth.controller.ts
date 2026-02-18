@@ -1,11 +1,20 @@
 import { findAccountS, registerS } from "@/services/auth/auth.service";
-import { compareHashed, hashValue } from "@/utils/bcrypt/bcrypt";
+import { compareHashed, hashValue } from "@/utils/bcrypt/bcrypt.util";
 import { AppError } from "@/utils/error/app-error.util";
 import { Request, Response } from "express";
 
 export const register = async (req: Request, res: Response) => {
   //Get data
-  const { firstName, lastName, username, email, password, agree } = req.body;
+  const {
+    _id,
+    firstName,
+    lastName,
+    username,
+    email,
+    password,
+    agree,
+    sessions,
+  } = req.body;
 
   // Check if all fields have data
   if (!firstName || !lastName || !username || !email || !password)
@@ -30,12 +39,14 @@ export const register = async (req: Request, res: Response) => {
 
   // Create acc
   const account = await registerS({
+    _id,
     firstName,
     lastName,
     username,
     email,
     password: hashedPassword,
     agree,
+    sessions,
   });
 
   //Return response

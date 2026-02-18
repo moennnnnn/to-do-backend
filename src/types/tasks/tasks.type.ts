@@ -3,6 +3,7 @@ import { Document, Types } from "mongoose";
 export type TaskStatus = "IN_PROGRESS" | "COMPLETED";
 
 export type TaskType = {
+  _id: string;
   title: string;
   description?: string;
   status: TaskStatus;
