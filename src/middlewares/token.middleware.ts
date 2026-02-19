@@ -35,7 +35,7 @@ export const requireAccessToken = async (
     }
 
     // Get the account from db
-    const account = await findAccountS({ _id: payload.sub }, "email name");
+    const account = await findAccountS({ _id: payload.sub }, "email firstName lastName username");
 
     if (!account) {
       return next(new AppError("Unauthorized: Account not found.", 401));

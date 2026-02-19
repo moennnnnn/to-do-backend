@@ -14,6 +14,8 @@ import initDB from "./db/db.connect.js";
 import { globalRateLimiter } from "./middlewares/limiter.middleware.js";
 import { globalErrorHandler } from "./middlewares/global-error-handler.middleware.js";
 import { taskRouter } from "./routes/tasks/task.route.js";
+import { tokenRouter } from "./routes/token/token.route.js";
+import { accountRouter } from "./routes/account/account.route.js";
 
 dotenv.config();
 const bootstrap = async () => {
@@ -60,6 +62,9 @@ const bootstrap = async () => {
   //Routes
   app.use("/api/auth", authRouter);
   app.use("/api/task", taskRouter);
+
+  app.use("/api/token", tokenRouter);
+  app.use("/api/account", accountRouter);
 
   // Error handler
   app.use(globalErrorHandler);
