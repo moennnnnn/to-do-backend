@@ -1,7 +1,7 @@
 import { Document } from "mongoose";
 
 export type SessionType = {
-  _id: string;
+  _id?: string;
   sid: string;
   token: string;
   expiresAt: Date;

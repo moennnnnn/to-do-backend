@@ -2,6 +2,21 @@ import { findAccountS, registerS } from "@/services/auth/auth.service";
 import { compareHashed, hashValue } from "@/utils/bcrypt/bcrypt.util";
 import { AppError } from "@/utils/error/app-error.util";
 import { Request, Response } from "express";
+import { v4 as uuid } from "uuid";
+import { pushSessionS } from "@/services/auth/auth.service";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "@/utils/jwt/jwt.util";
+import {
+  setRefreshCookie,
+  clearRefreshCookie,
+  REFRESH_COOKIE_NAME,
+  REFRESH_COOKIE_PATH,
+} from "@/utils/cookie/cookie.util";
+import Account from "@/models/auth/account.model";
+import { buildSession } from "@/utils/session/session.util";
 
 export const register = async (req: Request, res: Response) => {
   //Get data
@@ -48,9 +63,29 @@ export const register = async (req: Request, res: Response) => {
     agree,
     sessions,
   });
+  if (!account) throw new AppError("Failed to create account.", 500);
 
-  //Return response
-  res.status(200).json({ message: "Account registered successfully." });
+  const sid = uuid();
+  const sub = String(account._id);
+
+  const accessToken = signAccessToken(sub);
+  const refreshToken = signRefreshToken(sub, sid);
+
+  // Build session and save it in database
+  const session = await buildSession(refreshToken, sid);
+
+  // Push the session to database
+  const updated = await pushSessionS(String(account._id), sessions);
+  if (!updated) throw new AppError("Account not found.", 404);
+
+  // Set the refresh token in cookie
+  setRefreshCookie(res, refreshToken);
+
+  // Return response
+  return res.status(200).json({
+    message: "Account registered successfully.",
+    accessToken,
+  });
 };
 
 export const login = async (req: Request, res: Response) => {
@@ -76,33 +111,53 @@ export const login = async (req: Request, res: Response) => {
   if (!passwordCorrect) {
     throw new AppError("Incorrect password.", 400);
   }
+  // Get uuid
+  const sid = uuid();
 
-  //Return response
-  res.status(200).json({ message: "Login successfully." });
+  // Generate tokens
+  const sub = String(account._id);
+  const accessToken = signAccessToken(sub);
+  const refreshToken = signRefreshToken(sub, sid);
+
+  // Build session and save it in database
+  const session = await buildSession(refreshToken, sid);
+
+  // Push the session to database
+  const updated = await pushSessionS(String(account._id), session);
+  if (!updated) throw new AppError("Account not found.", 404);
+
+  // Set the refresh token in cookie
+  setRefreshCookie(res, refreshToken);
+
+  // Return response
+  return res.status(200).json({
+    message: "Login successfully.",
+    accessToken,
+  });
 };
 
 export const logout = async (req: Request, res: Response) => {
-  //Get data
-  const { username, email } = req.body;
+  //Get refresh token from cookie
+  const token = req.cookies?.[REFRESH_COOKIE_NAME];
 
-  //Check if existing account
-
-  let account;
-  if (email) {
-    account = await findAccountS({ email });
-  } else if (username) {
-    account = await findAccountS({ username });
-  } else {
-    account = false;
+  if (token) {
+    try {
+      const payload = verifyRefreshToken(token) as {
+        sub: string;
+        sid: string;
+      };
+      await Account.updateOne(
+        { _id: payload.sub },
+        { $pull: { sessions: { sid: payload.sid } } },
+      );
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production")
+        console.error("Logout verify failed:", err);
+    }
   }
 
-  const accountEmail = await findAccountS({ email });
-  const accountUsername = await findAccountS({ username });
-
-  if (!(accountEmail || accountUsername)) {
-    throw new AppError("User not found.", 400);
-  }
+  clearRefreshCookie(res);
 
   //Return response
-  res.status(200).json({ message: "Logged out successfully.", account });
+  res.status(200).json({ message: "Logged out successfully." });
 };
