@@ -13,7 +13,7 @@ export const taskRouter = Router();
 // Protect all task routes
 taskRouter.use(requireAccessToken);
 
-taskRouter.get("/all", getTasksC);
+taskRouter.get("/home", getTasksC);
 taskRouter.post("/add", createTaskC);
 taskRouter.put("/update/:id", updateTaskC);
 taskRouter.patch("/status/:id", markCompletedC);

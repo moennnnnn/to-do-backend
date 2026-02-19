@@ -13,6 +13,7 @@ import morgan from "morgan";
 import initDB from "./db/db.connect.js";
 import { globalRateLimiter } from "./middlewares/limiter.middleware.js";
 import { globalErrorHandler } from "./middlewares/global-error-handler.middleware.js";
+import { taskRouter } from "./routes/tasks/task.route.js";
 
 dotenv.config();
 const bootstrap = async () => {
@@ -58,6 +59,7 @@ const bootstrap = async () => {
   });
   //Routes
   app.use("/api/auth", authRouter);
+  app.use("/api/task", taskRouter);
 
   // Error handler
   app.use(globalErrorHandler);
