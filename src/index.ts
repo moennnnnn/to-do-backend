@@ -1,73 +1,12 @@
-// Routes
-import { authRouter } from "./routes/auth/auth.routes.js";
-
 import dotenv from "dotenv";
 dotenv.config();
-import expressMongoSanitize from "@exortek/express-mongo-sanitize";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import express from "express";
-import helmet from "helmet";
 import http from "http";
-import morgan from "morgan";
+import { createApp } from "./app.js";
 import initDB from "./db/db.connect.js";
-import { globalRateLimiter } from "./middlewares/limiter.middleware.js";
-import { globalErrorHandler } from "./middlewares/global-error-handler.middleware.js";
-import { taskRouter } from "./routes/tasks/task.route.js";
-import { tokenRouter } from "./routes/token/token.route.js";
-import { accountRouter } from "./routes/account/account.route.js";
 
-dotenv.config();
 const bootstrap = async () => {
-  const app = express();
-  app.set("trust proxy", 1);
-
+  const app = createApp();
   const PORT = process.env.PORT || 5000;
-  const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(",")
-    : [];
-
-  // CORS
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-        // Reject everything else
-        callback(new Error("CORS not allowed"), false);
-      },
-      credentials: true,
-    }),
-  );
-
-  // Security headers
-  app.use(helmet());
-  // Rate limiting
-  app.use(globalRateLimiter);
-  // Logger
-  app.use(morgan("dev"));
-  // JSON parser
-  app.use(express.json());
-  // Prevent NoSQL Injection
-  app.use(expressMongoSanitize());
-
-  // Cookie parser
-  app.use(cookieParser());
-  // Root
-  app.get("/api/test", (req, res) => {
-    res.status(200).send("Api is running");
-  });
-  //Routes
-  app.use("/api/auth", authRouter);
-  app.use("/api/task", taskRouter);
-
-  app.use("/api/token", tokenRouter);
-  app.use("/api/account", accountRouter);
-
-  // Error handler
-  app.use(globalErrorHandler);
   const server = http.createServer(app);
   server.setTimeout(300000);
   server.listen(PORT, () => {
