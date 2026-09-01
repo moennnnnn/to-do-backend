@@ -17,6 +17,11 @@ import {
 } from "@/utils/cookie/cookie.util";
 import Account from "@/models/auth/account.model";
 import { buildSession } from "@/utils/session/session.util";
+import { createOtpS, verifyOtpS } from "@/services/otp/otp.service";
+import {
+  sendVerificationEmail,
+  sendResetPasswordEmail,
+} from "@/utils/mail/mail.template";
 
 export const register = async (req: Request, res: Response) => {
   //Get data
@@ -160,4 +165,70 @@ export const logout = async (req: Request, res: Response) => {
 
   //Return response
   res.status(200).json({ message: "Logged out successfully." });
+};
+
+export const sendCode = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) throw new AppError("Email is required.", 400);
+
+  const account = await findAccountS({ email });
+  if (!account) throw new AppError("Email not found.", 404);
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+  await createOtpS(email, code);
+  await sendVerificationEmail({
+    email,
+    firstName: account.firstName,
+    lastName: account.lastName,
+    code,
+  });
+
+  return res
+    .status(200)
+    .json({ message: "Verification code sent to your email." });
+};
+
+export const verifyCode = async (req: Request, res: Response) => {
+  const { email, code } = req.body;
+  if (!email || !code) throw new AppError("Email and code are required.", 400);
+
+  const valid = await verifyOtpS(email, code);
+  if (!valid) throw new AppError("Invalid or expired code.", 400);
+
+  return res.status(200).json({ message: "Email verified successfully." });
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) throw new AppError("Email is required.", 400);
+
+  const account = await findAccountS({ email });
+  if (!account) throw new AppError("Email not found.", 404);
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  await createOtpS(email, code);
+  await sendResetPasswordEmail({
+    email,
+    firstName: account.firstName,
+    lastName: account.lastName,
+    code,
+  });
+
+  return res.status(200).json({ message: "Reset code sent to your email." });
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { email, newPassword } = req.body; // remove code from here
+  if (!email || !newPassword)
+    throw new AppError("Email and new password are required.", 400);
+
+  const hashed = await hashValue(newPassword);
+  const updated = await Account.findOneAndUpdate(
+    { email },
+    { password: hashed },
+    { new: true },
+  );
+  if (!updated) throw new AppError("Account not found.", 404);
+
+  return res.status(200).json({ message: "Password reset successfully." });
 };
